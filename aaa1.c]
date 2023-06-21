@@ -1,0 +1,400 @@
+/**
+ *   @file  ADXL362.h
+ *   @brief
+ *
+ *   @details
+ *
+ *   @author  Hasegawa (Yslab corp)
+ *
+ *   @internal
+ *     Created  2016/08/05
+ *
+ * ===================================================================
+ */
+​
+​
+/**      ADXL362
+ *
+ *  超低消費電力の加速度センサー
+ *  http://www.analog.com/jp/products/mems/accelerometers/adxl362.html
+ *
+ *  Refrences http://www.analog.com/media/jp/technical-documentation/data-sheets/ADXL362_jp.pdf
+ *
+ *  色々な機能があるけど今回は、FIFOと外部リトガ・クロックは無視する。
+ **/
+​
+​
+#ifndef __ADXL362_H__
+#define __ADXL362_H__
+​
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+​
+#include "stdint.h"
+#include "stddef.h"
+​
+/**
+ * アクティブ検出時間・インアクティブ検出時間の
+ * 1bit時間はODR設定により違います。
+ *
+ * 以下の値を使い時間を設定値に変換して設定して下さい。
+ * 例：
+ * ODR 12.5Hz
+ * 設定時間 20秒
+ * int val = (20 * 1000 * 10) / ADX362_O_TIMES
+ **/
+​
+typedef enum
+{
+    ADX362_ERR_OK,
+    ADX362_ERR_PARAMETERS,
+    ADX362_ERR_DATA_STORAGE,
+    ADX362_ERR_CONNECTION
+​
+}Adxl362_Err;
+​
+​
+/* -> -> -> -> ADXL362 レジスタ設定値-> -> -> -> */
+/**--  ACT_INACT_CTL ( 0x27 ) Ref.P29 --**/
+typedef enum    /** ACT_EN **/
+{
+    ADXL362_ACTEN_DISEBLE = 0,            /** Default **/
+    ADXL362_ACTEN_ENBLE
+​
+}Adxl362_ActEn;
+​
+typedef enum    /** ACT_REF **/
+{
+    ADXL362_ACTREF_ABSOLUTE = 0,            /** Default **/
+    ADXL362_ACTREF_REFERENCE
+​
+}Adxl362_ActRef;
+​
+typedef enum  /** INACT_EN **/
+{
+    ADXL362_INACTEN_DISEBLE = 0,            /** Default **/
+    ADXL362_INACTEN_ENBLE
+​
+}Adxl362_InactEn;
+​
+typedef enum    /** INACT_REF **/
+{
+    ADXL362_INACTREF_ABSOLUTE = 0,          /** Default **/
+    ADXL362_INACTREF_REFERENCE
+​
+}Adxl362_InactRef;
+​
+typedef enum    /** LINK/LOOP **/
+{
+    /** デフォルトモード
+     * アクティブ／インアクティブを同時に検知
+     * マイコンに割り込みを発生、割り込みクリアが必須
+     **/
+    ADXL362_LINKLOOP_DEFAULT = 0,           /** Default **/
+​
+    /** リンクモード
+     * アクティブ／インアクティブを交互に検知
+     * マイコンに割り込みを発生、割り込みクリアが必須
+     **/
+    ADXL362_LINKLOOP_LINK,
+​
+    /** ループモード
+     * リンクモード動作を行うが
+     * マイコンに割り込みを発生させない
+     **/
+    ADXL362_LINKLOOP_LOOP
+​
+}Adxl362_LinkLoop;
+​
+​
+/**--  INTMAP1&2(0x2A & 0x2B) Ref.P31-32 --**/
+typedef enum
+{
+    ADXL362_INTMAP_DATA_READY = 0,
+​
+    ADXL362_INTMAP_FIFO_READY,
+​
+    ADXL362_INTMAP_FIFO_FIFO_WATERMARK,
+​
+    ADXL362_INTMAP_FIFO_OVERRUN,
+​
+    ADXL362_INTMAP_ACT,
+​
+    ADXL362_INTMAP_INACT,
+​
+    ADXL362_INTMAP_AWAKE,
+​
+    /** 割り込み時にアクティブLowにする設定、MCUに合わせて設定する **/
+    ADXL362_INTMAP_INT_LOW
+​
+}Adxl362_IntMap;
+​
+​
+​
+/**--  FILTER_CTL ( 0x2C ) Ref.P33 --**/
+typedef enum    /** ODR **/
+{
+    ADXL362_ODR_12_5HZ = 0,
+    ADXL362_ODR_25HZ,
+    ADXL362_ODR_50HZ,
+    ADXL362_ODR_100HZ,                      /** Default **/
+    ADXL362_ODR_200HZ,
+    ADXL362_ODR_400HZ
+​
+}Adxl362_Odr;
+​
+typedef enum    /** HALF_BW **/
+{
+    ADXL362_HALFBW_HALF = 0,
+    ADXL362_HALFBW_QUARTER                 /** Default **/
+​
+}Adxl362_HalfBw;
+​
+typedef enum    /** RANGE **/
+{
+    ADXL362_RANGE_2G = 0,                  /** Default **/
+    ADXL362_RANGE_4G,
+    ADXL362_RANGE_8G
+​
+}Adxl362_Range;
+​
+​
+/**--  POWER_CTL( 0x2D ) Ref.P34 --**/
+typedef enum /** AUTOSLEEP **/
+{
+    /**
+     * 計測モードがリンク・ループモード時に
+     * インアクティブを検出すると自動で
+     * ウェイクアップモードに移行する
+     * デフォルトモードでは無効
+     **/
+    ADXL362_AUTOSLEEP_OFF = 0,              /** Default **/
+    ADXL362_AUTOSLEEP_ON
+​
+}Adxl362_AuotSleep;
+​
+typedef enum /** WAKEUP **/
+{
+    ADXL362_WAKEUP_OFF = 0,                  /** Default **/
+    ADXL362_WAKEUP_ON
+​
+}Adxl362_WakeUp;
+​
+typedef enum    /** LOW_NOISE **/
+{
+    ADXL362_LOWNOISE_DEFAULT = 0            /** Default **/,
+    ADXL362_LOWNOISE_FINE,
+    ADXL362_LOWNOISE_SUPERFINE
+​
+}Adxl362_LowNoise;
+​
+/* <- <- <- <- ADXL362 レジスタ設定値 <- <- <- <- */
+​
+​
+/**
+ * ADXL362のステータフラグ
+ * Refs P.25
+ * アドレス:    0x0B
+ * リセット時:  0x40
+ * エラー・割り込みの発生状況が確認出来る。
+ * レジスタを読み出す事でクリアされる。
+ *
+ * ※検出モードがデフォルトモード・リンクモード時(P16)は
+ * このレジスタを読み取り割り込みをクリアしなければならない。
+ */
+typedef enum
+{
+    /**  **/
+    ADXL362_STATUS_DATA_READY = 1,
+​
+    /** FIFO内に有効なデータがある **/
+    ADXL362_STATUS_FIFO_READY = 2,
+​
+    /** FIFOが規定サンプルを取得した **/
+    ADXL362_STATUS_FIFO_WATERMARK = 4,
+​
+    /** FIFOがオーバーフロー Ref.40を参照 **/
+    ADXL362_STATUS_FIFO_OVER = 8,
+​
+    /** アクティブを検出 **/
+    ADXL362_STATUS_ACT = 16,
+​
+    /** インアクティブ・自動落下を検出 **/
+    ADXL362_STATUS_INACT = 32,
+​
+    /** センサがアクティブ状態 **/
+    ADXL362_STATUS_AWAKE = 64,
+​
+    /** レジスタの設定エラーまたはリセット状態 **/
+    ADXL362_STATUS_REG_ERR = 128
+​
+}Adxl362_Status;
+​
+​
+​
+/** ACT_INACT_CTLの設定 **/
+typedef struct
+{
+    Adxl362_ActEn     act_en;
+    Adxl362_ActRef    act_ref;
+    Adxl362_InactEn   inact_en;
+    Adxl362_InactRef  inact_ref;
+    Adxl362_LinkLoop  link_loop;
+​
+}Adxl362_ActInActCtl;
+​
+/** INTMAP1・INTMAP2の設定 **/
+typedef struct
+{
+    Adxl362_IntMap int_1;
+    Adxl362_IntMap int_2;
+​
+}Adxl362_IntMaps;
+​
+/** FILTER_CTLの設定 **/
+typedef struct
+{
+    Adxl362_Odr     odr;
+    Adxl362_HalfBw  half_bw;
+    Adxl362_Range   range;
+​
+}Adxl362_FilterCtl;
+​
+/** POWER_CTLの設定 **/
+typedef struct
+{
+    Adxl362_AuotSleep   auot_sleep;
+    Adxl362_WakeUp      wake_up;
+    Adxl362_LowNoise    low_noise;
+​
+}Adxl362_PowerCtl;
+​
+​
+/** ADXL362 通信インターフェース */
+typedef void(*ADXL362_SPI_INIT)(void* userptr, int freq, int mode);
+typedef void(*ADXL362_SPI_WRITE)(void* userptr, const uint8_t* src, size_t size);
+typedef void(*ADXL362_SPI_READ)(void* userptr, uint8_t* dst, size_t size);
+typedef void(*ADXL362_SPI_CS)(void* userptr);
+​
+/** ADXL362 タイマーインターフェース **/
+typedef void(*ADXL362_TIMER_MS)(void* userptr, int ms);
+​
+typedef struct
+{
+    void*               userptr;
+    ADXL362_SPI_INIT    init;
+    ADXL362_SPI_WRITE   write;
+    ADXL362_SPI_READ    read;
+    ADXL362_SPI_CS      enable;
+    ADXL362_SPI_CS      disable;
+​
+    ADXL362_TIMER_MS wait_ms;
+​
+}Adxl362_Hal;
+​
+​
+typedef struct
+{
+    Adxl362_ActInActCtl  act_ctl;
+    Adxl362_IntMaps      int_map;
+    Adxl362_FilterCtl    filtrer_ctl;
+    Adxl362_PowerCtl     power_ctl;
+​
+​
+    /** アクティブ検出しきい値 Ref.27
+     * 設定可能値 0 ～ 2047
+     **/
+    uint16_t act_val;
+    /** アクティブ検出時間 Ref.27
+     * サンプルレートにより一番近い時間の設定になる
+     **/
+    uint8_t act_time_ms;
+​
+    /** インアクティブ検出しきい値 ( act_val同様 ) **/
+    int16_t inact_val;
+    /** インアクティブ検出時間 ( act_time_ms同様 ) **/
+    uint16_t inact_time_ms;
+​
+}Adxl362_Config;
+​
+​
+typedef struct
+{
+    int16_t x_data;
+    int16_t y_data;
+    int16_t z_data;
+​
+}Adxl362_Data;
+​
+​
+​
+/** ADXL362のSPI設定 初期化を行う **/
+Adxl362_Err Adxl362_init(Adxl362_Hal* hal);
+​
+Adxl362_Err Adxl362_start(Adxl362_Hal* hal);
+​
+Adxl362_Err Adxl362_stop(Adxl362_Hal* hal);
+​
+Adxl362_Err Adxl362_read_data(Adxl362_Hal* hal, Adxl362_Data* data);
+Adxl362_Err Adxl362_read_status(Adxl362_Hal* hal, uint8_t* status);
+​
+Adxl362_Err Adxl362_read_xdata(Adxl362_Hal* hal, uint8_t* data);
+Adxl362_Err Adxl362_read_ydata(Adxl362_Hal* hal, uint8_t* data);
+Adxl362_Err Adxl362_read_zdata(Adxl362_Hal* hal, uint8_t* data);
+​
+/** 温度センサの取得 **/
+Adxl362_Err Adxl362_read_temp(Adxl362_Hal* hal, int16_t* temp);
+​
+/** ->-> 各レジスタの設定 ->->
+ * 設定変更後は再度 Adxl362_startで反映されます。
+ **/
+/** ACT_INACT_CTL **/
+void Adxl362_set_act_en(Adxl362_ActEn val);
+void Adxl362_set_act_ref(Adxl362_ActRef val);
+void Adxl362_set_inact_en(Adxl362_InactEn val);
+void Adxl362_set_inact_ref(Adxl362_InactRef val);
+void Adxl362_set_link_loop(Adxl362_LinkLoop val);
+​
+/** INTMAP1・INTMAP2 **/
+void Adxl362_set_intmap1(Adxl362_IntMap bit);
+void Adxl362_set_intmap2(Adxl362_IntMap bit);
+/** INTマッピングは使用しなくなったらリセット **/
+void Adxl362_reset_intmap1(Adxl362_IntMap bit);
+void Adxl362_reset_intmap2(Adxl362_IntMap bit);
+​
+/** FILTER_CTR **/
+void Adxl362_set_odr(Adxl362_Odr val);
+void Adxl362_set_halfbw(Adxl362_HalfBw val);
+void Adxl362_set_range(Adxl362_Range val);
+​
+/** POWER_CTL **/
+void Adxl362_set_auto_sleep(Adxl362_AuotSleep val);
+void Adxl362_set_wakeup(Adxl362_WakeUp val);
+void Adxl362_set_low_noise(Adxl362_LowNoise val);
+​
+/**
+ * アクティブを検出する閾値
+ * 設定値の1Bit値は計測レンジ(g)と同じです。
+ **/
+void Adcl362_set_act_thresh(uint16_t val);
+​
+/**
+ * アクティブ判定時間
+ * 閾値以上の値が判定時間以上経過したら
+ * アクティブ判定をします。
+ * 設定値の1Bit値はサンプリングレート(ODR)に依存します。
+ **/
+void Adxl362_set_act_time(uint8_t val);
+​
+void Adcl362_set_inact_thresh(uint16_t val);
+void Adxl362_set_inact_time(uint16_t val);
+​
+/** <-<- 各レジスタの設定 <-<- **/
+​
+#ifdef __cplusplus
+}
+#endif
+​
+#endif
