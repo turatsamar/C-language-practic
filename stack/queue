@@ -1,0 +1,186 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#define LINE 80
+
+
+
+// Define a structure for a simple stack
+typedef struct {
+    int *arr;
+    int top;
+    int capacity;
+} Stack;
+
+// Define a structure for a simple queue
+typedef struct {
+    int *arr;
+    int front, rear, size, capacity;
+} Queue;
+
+// Function to initialize a stack
+Stack* initStack(int capacity) {
+    Stack* stack = (Stack*)malloc(sizeof(Stack));
+    stack->arr = (int*)malloc(sizeof(int) * capacity);
+    stack->top = -1;
+    stack->capacity = capacity;
+    return stack;
+}
+
+// Function to initialize a queue
+Queue* initQueue(int capacity) {
+    Queue* queue = (Queue*)malloc(sizeof(Queue));
+    queue->arr = (int*)malloc(sizeof(int) * capacity);
+    queue->front = queue->size = 0;
+    queue->rear = capacity - 1;
+    queue->capacity = capacity;
+    return queue;
+}
+
+// Function to push an element onto the stack
+void push(Stack* stack, int item) {
+    if (stack->top == stack->capacity - 1) {
+        printf("Stack Overflow\n");
+        return;
+    }
+    stack->arr[++stack->top] = item;
+}
+
+// Function to pop an element from the stack
+int pop(Stack* stack) {
+    if (stack->top == -1) {
+        printf("Stack Underflow\n");
+        return -1; // Return a sentinel value for underflow
+    }
+  
+    return stack->arr[stack->top--];
+}
+
+// Function to enqueue an element into the queue
+void enqueue(Queue* queue, int item) {
+    if (queue->size == queue->capacity) {
+        printf("Queue Overflow\n");
+        return;
+    }
+    queue->rear = (queue->rear + 1) % queue->capacity;
+    queue->arr[queue->rear] = item;
+    queue->size++;
+}
+
+// Function to dequeue an element from the queue
+int dequeue(Queue* queue) {
+    if (queue->size == 0) {
+        printf("Queue Underflow\n");
+        return -1; // Return a sentinel value for underflow
+    }
+    int item = queue->arr[queue->front];
+    queue->front = (queue->front + 1) % queue->capacity;
+    queue->size--;
+    return item;
+}
+
+int main(void) {
+    char buffer[LINE + 1];
+    int number;
+    Stack* stack = initStack(10); // Initialize a stack with capacity 10
+    Queue* queue = initQueue(10); // Initialize a queue with capacity 10
+
+    printf("Please enter commands (push, pop, enqueue, dequeue,)\n");
+
+    while (1)
+      {
+        fgets(buffer, sizeof(buffer), stdin);
+
+        if (sscanf(buffer, "push(%d)", &number) == 1) 
+        {
+            push(stack, number);
+            printf("Pushed %d onto the stack\n", number);
+          
+        }
+        else if (strcmp(buffer, "push(dequeue())\n") == 0)
+        {
+            // Directly execute push(dequeue())
+            int dequeued = dequeue(queue);
+            if (dequeued != -1)
+            {
+                push(stack, dequeued);
+                printf("Dequeued %d from the queue and pushed onto the stack\n", dequeued);
+            }
+            else
+            {
+                printf("Queue is empty. Unable to dequeue.\n");
+            }
+        } 
+        else if (sscanf(buffer, "pop(%d)", &number) == 1)
+        {
+            int popped = pop(stack);
+            if (popped != -1)
+            {
+                printf("Popped %d from the stack\n", popped);
+            }
+        }
+          
+        else if (sscanf(buffer, "enqueue(%d)", &number) == 1) 
+        {
+            enqueue(queue, number);
+            printf("Enqueued %d into the queue\n", number);
+        }
+        else if (sscanf(buffer, "dequeue(%d)", &number) == 1)
+        {
+            int dequeued = dequeue(queue);
+            if (dequeued != -1)
+            {
+                printf("Dequeued %d from the queue\n", dequeued);
+            }
+        }
+        else if (strcmp(buffer, "enqueue(pop())\n") == 0)
+          {
+              // Directly execute enqueue(pop())
+            int popped = pop(stack);
+            if (popped != -1)
+              {
+                  enqueue(queue, popped);
+                  printf("Popped %d from the stack and enqueued into the queue\n",popped);
+              }
+              else
+              {
+                  printf("Stack is empty. Unable to pop.\n");
+              } 
+          }
+        else if(strcmp(buffer,"enqueue(dequeue())\n") == 0)
+        {
+          int dequeued = dequeue(queue);
+          push(stack, dequeued);
+          if(dequeued != 1)
+          {
+             printf("Dequeued %d from the queue\n", dequeued);
+             printf("Pushed %d onto the stack\n",dequeued);
+          }  
+        }
+        else if(strcmp(buffer,"exit\n") == 0)
+          {
+            printf("end!!\n");
+            break;
+          }
+        else if(strcmp(buffer,"dequeue()\n") == 0)
+        {
+          int X = dequeue(queue);
+          if(X != -1)
+          {
+            printf("X = %d\n",X);
+          }
+          
+        }
+        else
+        {
+            printf("Invalid command\n");
+        }
+    }
+
+    free(stack->arr);
+    free(stack);
+    free(queue->arr);
+    free(queue);
+
+    return 0;
+}
