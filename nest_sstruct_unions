@@ -1,0 +1,62 @@
+#include <stdio.h>
+
+/*Task */
+/*1.How to nest structures and union*/
+/*2.how to create pointer to structute and union*/
+/*3.how to use structure and unions */
+
+typedef union{
+    unsigned long reg;
+    struct{
+        unsigned char u8rotateForwardSpeed;
+        unsigned char u8rotateReversSpeed;
+        unsigned char u8speedRateChange;
+        unsigned char blrotateStatusFlags;
+    } member;
+}LED_ROTATE_Type;
+
+typedef union{
+    unsigned long reg;
+    struct {
+        unsigned short ul6pwmLightIntensity;
+        unsigned char u8breathSpeed;
+        unsigned char blbreathFlags;
+    } member;
+}LED_BREATH_Type;
+
+typedef union{
+    unsigned long reg;
+    struct{
+        unsigned char u8pattern[4];
+    } member;
+}LED_PATTERN_Type;
+
+typedef struct{
+    volatile LED_ROTATE_Type ledRotation;
+    volatile LED_BREATH_Type ledBreath;
+    volatile LED_PATTERN_Type ledPattern;
+} STRUCT_LED_Variables;
+
+int main(void){
+
+    STRUCT_LED_Variables   STRUCT_allLEDVariables;
+    STRUCT_LED_Variables *pSTRUCT_allLEDVariables = &STRUCT_allLEDVariables;
+    pSTRUCT_allLEDVariables->ledRotation.reg = 0xabcdeff;
+    pSTRUCT_allLEDVariables->ledRotation.member.u8rotateForwardSpeed = 0x11;
+    pSTRUCT_allLEDVariables->ledRotation.member.u8rotateReversSpeed = 0x22;
+    pSTRUCT_allLEDVariables->ledRotation.member.u8speedRateChange = 0x55;
+    pSTRUCT_allLEDVariables->ledRotation.member.blrotateStatusFlags = 0x01;
+
+    pSTRUCT_allLEDVariables->ledPattern.reg = 0x552211;
+    pSTRUCT_allLEDVariables->ledPattern.member.u8pattern[0] = 0xaa;
+    pSTRUCT_allLEDVariables->ledPattern.member.u8pattern[1] = 0xbb;
+    pSTRUCT_allLEDVariables->ledPattern.member.u8pattern[2] = 0xcc;
+    pSTRUCT_allLEDVariables->ledPattern.member.u8pattern[3] = 0xdd;
+
+    pSTRUCT_allLEDVariables->ledBreath.reg = 0x01020302;
+    pSTRUCT_allLEDVariables->ledBreath.member.u8breathSpeed = 0x33;
+    pSTRUCT_allLEDVariables->ledBreath.member.ul6pwmLightIntensity = 0xffaa;
+    pSTRUCT_allLEDVariables->ledBreath.member.blbreathFlags = 0b11;
+    
+    return 0;
+}
